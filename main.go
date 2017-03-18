@@ -162,28 +162,22 @@ func LevenstheinDistanceRecursive(first, second string) int {
 
 func DamerauLevenstheinDistanceRecursive(first, second string) int {
 	var result int
-	if first == "" {
-		return len(second)
+	if minimum(len(first), len(second)) == 0 {
+		return maximum(len(first), len(second))
 	}
-	if second == "" {
-		return len(first)
-	}
-	if len(first) > 1 && len(second) > 1 {
-		if first[0] == second[1] && first[1] == second[0] {
-			if first[0] == second[0] {
-				result += minimum(DamerauLevenstheinDistanceRecursive(first[1:], second)+1,
-					DamerauLevenstheinDistanceRecursive(first, second[1:])+1,
-					DamerauLevenstheinDistanceRecursive(first[1:], second[1:]),
-					DamerauLevenstheinDistanceRecursive(first[3:], second[3:])+1)
-			} else {
-				result = minimum(DamerauLevenstheinDistanceRecursive(first[1:], second)+1,
-					DamerauLevenstheinDistanceRecursive(first, second[1:])+1,
-					DamerauLevenstheinDistanceRecursive(first[1:], second[1:])+1,
-					DamerauLevenstheinDistanceRecursive(first[3:], second[3:])+1)
-			}
+	if len(first) > 1 && len(second) > 1 && first[0] == second[1] && first[1] == second[0] {
+		if first[0] == second[0] {
+			result += minimum(DamerauLevenstheinDistanceRecursive(first[1:], second)+1,
+				DamerauLevenstheinDistanceRecursive(first, second[1:])+1,
+				DamerauLevenstheinDistanceRecursive(first[1:], second[1:]),
+				DamerauLevenstheinDistanceRecursive(first[2:], second[2:])+1)
+		} else {
+			result = minimum(DamerauLevenstheinDistanceRecursive(first[1:], second)+1,
+				DamerauLevenstheinDistanceRecursive(first, second[1:])+1,
+				DamerauLevenstheinDistanceRecursive(first[1:], second[1:])+1,
+				DamerauLevenstheinDistanceRecursive(first[2:], second[2:])+1)
 		}
-	}
-	if first[0] == second[0] {
+	} else if first[0] == second[0] {
 		result = minimum(DamerauLevenstheinDistanceRecursive(first[1:], second)+1,
 			DamerauLevenstheinDistanceRecursive(first, second[1:])+1,
 			DamerauLevenstheinDistanceRecursive(first[1:], second[1:]))
@@ -201,33 +195,31 @@ func DamerauLevenstheinDistanceRecursiveWeighted(first, second string) float64 {
 	if minimum(len(first), len(second)) == 0 {
 		return float64(maximum(len(first), len(second)))
 	}
-	if len(first) > 1 && len(second) > 1 {
-		if first[0] == second[1] && first[1] == second[0] {
-			weight := getWeight(string(first[0]), string(second[0]))
-			if first[0] == second[0] {
-				result += minimumFloat(DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second)+1,
-					DamerauLevenstheinDistanceRecursiveWeighted(first, second[1:])+1,
-					DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second[1:]),
-					DamerauLevenstheinDistanceRecursiveWeighted(first[3:], second[3:])+weight)
-			} else {
-				result += minimumFloat(DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second)+1,
-					DamerauLevenstheinDistanceRecursiveWeighted(first, second[1:])+1,
-					DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second[1:])+weight,
-					DamerauLevenstheinDistanceRecursiveWeighted(first[3:], second[3:])+weight)
-			}
+	if len(first) > 1 && len(second) > 1 && first[0] == second[1] && first[1] == second[0] {
+		weight := getWeight(string(first[0]), string(second[0]))
+		if first[0] == second[0] {
+			result += minimumFloat(DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second)+1,
+				DamerauLevenstheinDistanceRecursiveWeighted(first, second[1:])+1,
+				DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second[1:]),
+				DamerauLevenstheinDistanceRecursiveWeighted(first[2:], second[2:])+weight)
+		} else {
+			result += minimumFloat(DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second)+1,
+				DamerauLevenstheinDistanceRecursiveWeighted(first, second[1:])+1,
+				DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second[1:])+weight,
+				DamerauLevenstheinDistanceRecursiveWeighted(first[2:], second[2:])+weight)
+		}
+	} else {
+		weight := getWeight(string(first[0]), string(second[0]))
+		if first[0] == second[0] {
+			result = minimumFloat(DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second)+1,
+				DamerauLevenstheinDistanceRecursiveWeighted(first, second[1:])+1,
+				DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second[1:]))
+		} else {
+			result = minimumFloat(DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second)+1,
+				DamerauLevenstheinDistanceRecursiveWeighted(first, second[1:])+1,
+				DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second[1:])+weight)
 		}
 	}
-	weight := getWeight(string(first[0]), string(second[0]))
-	if first[0] == second[0] {
-		result = minimumFloat(DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second)+1,
-			DamerauLevenstheinDistanceRecursiveWeighted(first, second[1:])+1,
-			DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second[1:]))
-	} else {
-		result = minimumFloat(DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second)+1,
-			DamerauLevenstheinDistanceRecursiveWeighted(first, second[1:])+1,
-			DamerauLevenstheinDistanceRecursiveWeighted(first[1:], second[1:])+weight)
-	}
-
 	return result
 }
 
