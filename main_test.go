@@ -83,3 +83,20 @@ func TestDamerauRecursiveWithWeights2C(t *testing.T) {
 		t.Error("Expected 3.25, got ", resultFirst)
 	}
 }
+
+func BenchmarkDamerauRecursiveWithWeights2C(b *testing.B) {
+	first := "saarillone"
+	second := "asstilkimr"
+	for n := 0; n < b.N; n++ {
+		DamerauLevenstheinDistanceRecursiveWeighted(first, second)
+	}
+
+}
+func BenchmarkDamerauDynamicWithWeights2C(b *testing.B) {
+	first := "saarillone"
+	second := "asstilkimr"
+	for n := 0; n < b.N; n++ {
+		DamerauLevenstheinDistanceDynamicWeighted(first, second)
+	}
+
+}
