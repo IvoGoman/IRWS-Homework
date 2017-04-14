@@ -14,3 +14,5 @@ There are several flags to customize what happens at runtime
 For the implementation golang was used, there are a couple of tests to show sample output and benchmark tests to see the difference in runtime between recursive and dynamic programming versions.
 
 ## Homework 2: Unigram Likelihood Model for Information Retrieval
+Homework 2 has multiple mistakes hidden in depths of unreadable monkey-written scala code. It is your special task to find these mistakes and make the author personally liable for his wrongdoings.
+Hakuna Matata!
