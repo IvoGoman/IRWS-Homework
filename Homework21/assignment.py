@@ -127,9 +127,15 @@ def calc_tf_idf(idf, tf):
 def manual_correction(docs):
     # """Some manual correction to pos-tag filtered words"""
     docs[0]=[x.replace('orcs', 'orc') for x in docs[0]]
+    docs[0].remove("hundred")
+    docs[0].append("surround")
+    docs[1].append("body")
+    docs[2].append("closer")
+    docs[2].append("radiat")
     docs[2]=[x.replace('orcs', 'orc') for x in docs[2]]
     docs[3]=[x.replace('orcs', 'orc') for x in docs[3]]
     docs[3].remove("only")
+    docs[3].append("deadly")
     return docs
 
 def calc_cos_sim(query, tfidf):
@@ -138,12 +144,12 @@ def calc_cos_sim(query, tfidf):
     logy = 0
     for term in query:
         if term in tfidf:
-            dotproduct = dotproduct + tfidf[term]
-    logx = math.log10(len(query))
-    for key,val in tfidf.items():
-        logy = logy + (val * val)
-    logy = math.log10(logy)
-    return dotproduct/(logx * logy)
+            dotproduct += tfidf[term]
+    logx = math.sqrt(len(query))
+    for key, val in tfidf.items():
+        logy += math.pow(val, 2)
+    logy = math.sqrt(logy)
+    return dotproduct / (logx * logy)
 
 def calc_euclidean_sim(query, tfidf):
     distance = 0
@@ -152,20 +158,88 @@ def calc_euclidean_sim(query, tfidf):
     for q in query:
         distance = distance + math.pow(1-tfidf[q], 2) if q in tfidf.keys() else distance + math.pow(1-0, 2)
     for k, v in tfidf.items():
-        if k in query:
-            distance = distance + math.pow(0-v, 2)
-    return math.log10(distance)
+        if k not in query:
+            distance += math.pow(0-v, 2)
+    return math.sqrt(distance)
 
-def calc_binary_ind(query, docs):
-    print(len(docs))
-    tdf = calc_tdf(docs)
+def unitnorm(vector):
+    unitnorm = 0
+    for k,v in vector.items():
+        unitnorm += v
+    return unitnorm
+
+def calc_euclidean_norm_dist(query, tfidf):
+    distance = 0
+    query = set(query)
+    qlen = len(query)
+    dlen = unitnorm(tfidf)
+    c = 0
+    for q in query:
+        distance = distance + math.pow((1/qlen)-(tfidf[q]/dlen), 2) if q in tfidf.keys() else distance + math.pow((1/qlen), 2)
+    for k, v in tfidf.items():
+        if k not in query:
+            distance += math.pow(v/dlen, 2)
+    return math.sqrt(distance)
+
+def calc_binary_ind(query, docs, tdf):
     bign = len(docs)
     weight = {}
-    for i in range(len(docs)):
+    for d in range(len(docs)):
+        score = 0
         for t in query:
-            weight[i] = 0 if i not in weight.keys() else weight[i] 
-            weight[i] += math.log10(0.5 * (tdf[t] / bign)) if t in set(docs[i]) else 0
+            score = math.log10((bign-tdf[t]+0.5) / (tdf[t]+0.5)) if t in docs[d] else math.log10((0.5 + bign) / (0.5))
+        weight[d] = score
     return weight
+
+def calc_two_poisson(query, docs, tdf, k):
+    ranking = {}
+    bign = len(docs)
+    for d in range(len(docs)):
+        score = 0
+        term_count = 0
+        for term in query:
+            for word in docs[d]:
+                term_count += 1 if term == word else 0
+            w = math.log10((bign-tdf[term]+0.5) / (tdf[term]+0.5)) if term in set(docs[d]) else math.log10((0.5 + bign) / (0.5))
+            score += ((term_count * (k+1))/(term_count + k)) * w
+        ranking[d] = score
+    return ranking
+
+def calc_bm_eleven(query, docs, tdf, k):
+    ranking = {}
+    len_avg = 0
+    bign = len(docs)
+    for doc in docs:
+        len_avg += len(doc)
+    len_avg = len_avg/len(docs)
+    for d in range(len(docs)):
+        score = 0
+        term_count = 0
+        for term in query:
+            for word in docs[d]:
+                term_count += 1 if term == word else 0
+            w = math.log10((bign-tdf[term]+0.5) / (tdf[term]+0.5)) if term in set(docs[d]) else math.log10((0.5 + bign) / (0.5))
+            score += ((term_count * (k+1))/(term_count + k * (len(docs[d])/len_avg))) * w
+        ranking[d] = score
+    return ranking
+
+def calc_bm_twentyfive(query, docs, tdf, k, b):
+    ranking = {}
+    len_avg = 0
+    bign = len(docs)
+    for doc in docs:
+        len_avg += len(doc)
+    len_avg = len_avg/len(docs)
+    for d in range(len(docs)):
+        score = 0
+        term_count = 0
+        for term in query:
+            for word in docs[d]:
+                term_count += 1 if term == word else 0
+            w = math.log10((bign-tdf[term]+0.5) / (tdf[term]+0.5)) if term in set(docs[d]) else math.log10((0.5 + bign) / (0.5))
+            score += ((term_count * (k+1))/(term_count + k * (len(docs[d])/len_avg)*b+k*(1-b))) * w
+        ranking[d] = score
+    return ranking
 
 def main():
     d1 = """Frodo and Sam were trembling in the darkness, surrounded in darkness by hundreds of blood-thirsty orcs. Sam was certain these beasts were about to taste the scent of their flesh."""
@@ -174,9 +248,11 @@ def main():
     d4 = """Sam was carrying a small lamp, shedding some blue light. He was afraid that orcs might spot him, but it was the only way to avoid deadly pitfalls of Mordor."""
     query = preprocess_query("Sam and blue orc")
     query2 = preprocess_query("Sam and Frodo love blue orcs")
+    query2 = [x.replace('orcs', 'orc') for x in query2]
     docs = [d1, d2, d3, d4]
     docs = preprocess(docs)
     docs = manual_correction(docs)
+    pprint(docs)
     print('IDF scores')
     idf = calc_idf(docs)
     idf2 = calc_idf_two(docs)
@@ -184,14 +260,16 @@ def main():
     cosinesim = {}
     cosinesim2 = {}
     euclideansim = {}
+    euclideansimnorm = {}
     for d in range(len(docs)):
         print('************************************************************')
-        print('Document %d' % d + 1) 
+        print('Document %d' % (d + 1))
         print('************************************************************')
         tf = calc_tf(docs[d])
         tfidf = calc_tf_idf(idf, tf)
         cosinesim[d] = calc_cos_sim(query, tfidf)
         euclideansim[d] = calc_euclidean_sim(query, tfidf)
+        euclideansimnorm[d] = calc_euclidean_norm_dist(query, tfidf)
         print('TF scores')
         pprint(tf)
         print('TF-IDF scores')
@@ -205,23 +283,39 @@ def main():
         print('TF-IDF scores')
         pprint(tfidf2)
 
-    binaryindep = calc_binary_ind(query2, docs)
+    tdf = calc_tdf(docs)
+    binaryindep = calc_binary_ind(query2, docs, tdf)
+    twopoisson = calc_two_poisson(query2, docs, tdf, 1)
+    bmeleven = calc_bm_eleven(query2, docs, tdf, 1)
+    bmtwentyfive = calc_bm_twentyfive(query2, docs, tdf, 1, 0.75)
 
     print('************************************************************')
     print("Query: Sam and blue orc")
     print('************************************************************')
-    sorted_similarity = sorted(cosinesim.items(), key = lambda item : item[1], reverse=True)
+    sorted_similarity = sorted(cosinesim.items(), key=lambda item: item[1], reverse=True)
     print('Cosine Similarity Ranking')
     pprint(sorted_similarity)
-    sorted_similarity = sorted(cosinesim2.items(), key = lambda item : item[1], reverse=True)
+    sorted_similarity = sorted(cosinesim2.items(), key=lambda item: item[1], reverse=True)
     print('Cosine Similarity Ranking')
     pprint(sorted_similarity)
-    sorted_similarity = sorted(euclideansim.items(), key = lambda item : item[1], reverse=True)
+    sorted_similarity = sorted(euclideansim.items(), key=lambda item: item[1], reverse=True)
     print('Euclidean Similarity Ranking')
+    pprint(sorted_similarity)
+    sorted_similarity = sorted(euclideansimnorm.items(), key=lambda item: item[1], reverse=True)
+    print('Normalized Euclidean Similarity Ranking')
     pprint(sorted_similarity)
     print('************************************************************')
     print('Query: Sam and Frodo love blue orcs')
     print('************************************************************')
     print('Binary Independence Model')
-    pprint(sorted(binaryindep.items(), key = lambda item : item[1], reverse=True))
+    pprint(sorted(binaryindep.items(), key=lambda item: item[1], reverse=True))
+    print('************************************************************')
+    print('Two Poisson Model')
+    pprint(sorted(twopoisson.items(), key=lambda item: item[1], reverse=True))
+    print('************************************************************')
+    print('BM 11 Model')
+    pprint(sorted(bmeleven.items(), key=lambda item: item[1], reverse=True))
+    print('************************************************************')
+    print('BM 25 Model')
+    pprint(sorted(bmtwentyfive.items(), key=lambda item: item[1], reverse=True))
 main()
