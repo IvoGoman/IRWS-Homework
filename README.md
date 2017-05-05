@@ -14,8 +14,6 @@ There are several flags to customize what happens at runtime
 For the implementation golang was used, there are a couple of tests to show sample output and benchmark tests to see the difference in runtime between recursive and dynamic programming versions.
 
 ## Homework 2: Unigram Likelihood Model for Information Retrieval
-Homework 2 is split into a pure programming and a text processing assignment. 
-
-For the programming assignment the tasks was to build a Unigram Likelihood Model for the 19News corpus, which is able to take ad-hoc queries and rank the documents by relevance based on the unigram model. This part is implemented using Scala and the Spark Api.
-
+Homework is split into a pure programming and a text processing assignment. 
+For the programming assignment the tasks was to build a Unigram Likelihood Model for the 19News corpus, which is able to take ad-hoc queries. This part is implemented using Scala and the Spark Api.
 For the second part of the Homework I used Python instead of calculating the different term weightings and metrics by hand. This also allows for later reuse.
